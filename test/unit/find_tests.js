@@ -153,49 +153,7 @@ test('Match multiple attributes (AND) ' , function(){
 	equals(we_built_this_city.length,1,
 		'Expect 1 user, named alice, age 21:');
 });
-//
-////////////////////////////////////////////////////////////////////////////////
-//
-//	test('Massive inserts ' , function(){
-//		window.localStorage.clear();
-//		MilkCrate.initBucket({bucket: 'users'});
-//		inserts = 15;
-//		names = ['aaa','bbb','ccc','ddd','eee','fff','ggg','hhh','iii','jjj'];
-//
-//		for (var i = 0; i < inserts; i++) {
-//			MilkCrate.users.save({name: names[(i % 10)]});
-//		}
-//		console.log(MilkCrate.users.meta);
-//		var res = MilkCrate.users.find();
-//
-//
-//		equals(res.length,1,
-//			'Expect 1 user, named alice, age 21:');
-//	});
 
-
-//	test('Big fat massive insert' , function(){
-//		window.localStorage.clear();
-//		MilkCrate.initBucket({bucket: 'users'});
-//		inserts = 100000;
-//		names = ['aaa','bbb','ccc','ddd','eee','fff','ggg','hhh','iii','jjj'];
-//
-//		items = [];
-//		for (var i = 0; i < inserts; i++) {
-//			items.push({name: names[(i % 10)]});
-//		}
-//		console.log(items.length);
-//
-//		MilkCrate.users.save({ itemsArray: items});
-//
-//
-//		//var res = MilkCrate.users.find();
-//
-//
-//		equals(inserts,items.length,'mesg');
-////		equals(res.length,1,
-////			'Expect 1 user, named alice, age 21:');
-//	});
 
 
 
