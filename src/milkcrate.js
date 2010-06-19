@@ -180,10 +180,6 @@ MilkCrate = {
 
 
 	},
-
-	_is: function ( type, obj ) {
-		return Object.prototype.toString.call( obj ) === "[object "+ type +"]";
-	},
 	// direct copy from Qunit hoozit()
 	_type: function (o) {
 		// Determine what is o.
@@ -241,7 +237,6 @@ MilkCrate = {
 	},
 	_save: function(key,obj) {
 		MilkCrate.engine.setItem(key,JSON.stringify(obj));
-
 	},
 	_load: function(key){
 		var obj = MilkCrate.engine.getItem(key);
