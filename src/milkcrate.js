@@ -100,6 +100,23 @@ MilkCrate = {
 
 				var updatables = this.find(criteria);
 
+				// add incrementers {$inc, { field:increment }}
+				if ( objNew.$inc ) {
+					for (var field in objNew.$inc) {
+						if (objNew.$inc.hasOwnProperty(field)) {
+							// convert the $inc to a function to increment the supplied value
+							objNew[field] = (function( increment ) {
+								return (function(old) {
+									return old + increment;
+								});
+							})(objNew.$inc[field]);
+
+						}
+					}
+					delete objNew.$inc;
+				}
+
+
 
 				if ( updatables.length === 0 ) {
 					if (upsert === true) {
@@ -122,7 +139,11 @@ MilkCrate = {
 						
 						for (var attr in objNew) {
 							if (objNew.hasOwnProperty(attr)) {
-								current[attr] = objNew[attr];
+								if (MilkCrate._type(objNew[attr]) === 'function') {
+									current[attr] = objNew[attr](current[attr]);
+								} else {
+									current[attr] = objNew[attr];
+								}
 							}
 						}
 						MilkCrate._save(this._id(current._id), current);
@@ -153,7 +174,7 @@ MilkCrate = {
 				} else {
 				// new row
 					this.meta.rows++;
-					MilkCrate._save(key,obj);
+					MilkCrate._save(key,obj); 
 					this.saveMeta();
 				}
 

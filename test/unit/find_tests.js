@@ -1,3 +1,4 @@
+$(document).ready(function() {
 module('Find');
 
 
@@ -200,3 +201,4 @@ test('Match multiple attributes (AND) ' , function(){
 
 
 
+});

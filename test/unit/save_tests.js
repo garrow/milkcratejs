@@ -1,3 +1,4 @@
+$(document).ready(function() {
 module('Save');
 
 
@@ -87,23 +88,42 @@ test('Update existing items, with multiples',function(){
 				   { _id: 2, name: "bob", age: 21 , birthday: "today" } ]);
 
 });
-//test('UNIMPLMENTED Update using modifier: $inc (increment)',function(){
-//	save_tests_setup();
-//	expect(1);
-//
-//	MilkCrate.users.save( {name:'alice' ,age:21} );
-//	MilkCrate.users.save( {name:'bob' ,age:21} );
-//	MilkCrate.users.save( {name:'charlie',age:32 } );
-//	MilkCrate.users.save( {name:'dave' ,age:34 } );
-//
-//	MilkCrate.users.update( {age:21} , {$inc : { age: 1 }}, false, true);
-//
-//
-//
-//	same( [], [ { _id: 1, name: "alice", age: 22 },
-//				   { _id: 2, name: "bob", age: 22} ],'!!!!Implement this!!!');
-//
-//});
+test('Update using modifier: $inc (increment)',function(){
+	save_tests_setup();
+	expect(2);
+
+	MilkCrate.users.save( {name:'alice' ,age:21} );
+	MilkCrate.users.save( {name:'bob' ,age:21} );
+	MilkCrate.users.save( {name:'charlie',age:32 } );
+	MilkCrate.users.save( {name:'dave' ,age:32 } );
+
+	MilkCrate.users.update( {age:21} , {$inc : { age: 1 }}, false, true);
+	var updated = MilkCrate.users.find( {age:22});
+	var unchanged = MilkCrate.users.find( {age:32});
+
+
+	same( updated, [ { _id: 1, name: "alice", age: 22 },
+				   { _id: 2, name: "bob", age: 22} ],'Expect users of age 21 to now be 22');
+	same( unchanged, [ { _id: 3, name: "charlie", age: 32 },
+				   { _id: 4, name: "dave", age: 32} ],'Expect users who do not match criteria to not be updated');
+
+});
+test('Update using modifier: $inc (increment) with higher step value',function(){
+	save_tests_setup();
+	expect(2);
+
+	MilkCrate.users.save( {name:'alice' ,age:21} );
+	MilkCrate.users.save( {name:'bob' ,age:21} );
+	
+	MilkCrate.users.update( {age:21} , {$inc : { age: 7 }}, false, true);
+	var updated = MilkCrate.users.find( {age:28});
+
+	same( updated, [ { _id: 1, name: "alice", age: 28 },
+				   { _id: 2, name: "bob", age: 28} ],'Expect users of age 21 to now be 28');
+	
+
+});
 
 
 
+});
