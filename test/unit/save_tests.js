@@ -110,7 +110,7 @@ test('Update using modifier: $inc (increment)',function(){
 });
 test('Update using modifier: $inc (increment) with higher step value',function(){
 	save_tests_setup();
-	expect(2);
+	expect(1);
 
 	MilkCrate.users.save( {name:'alice' ,age:21} );
 	MilkCrate.users.save( {name:'bob' ,age:21} );
