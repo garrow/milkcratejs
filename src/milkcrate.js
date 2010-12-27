@@ -6,85 +6,80 @@
  **/
 (function(){
 
-MilkCrate = {
-	engine:null,
-	initBucket: function initBucket(config) {
-		if (!MilkCrate.engine) {
-			MilkCrate.engine = window.localStorage;
-		}
 
-		MilkCrate[config.bucket] = {
-			bucket: config.bucket,
-			meta: {nextId: 1,rows:0},
+var Bucket = function (bucket) {
+	this.bucket = bucket;
+	this.meta = {nextId: 1,rows:0};
+};
 
-			init: function init(){
-				if ( MilkCrate._exists(this.bucket+'.meta')) {
-					this.meta = MilkCrate._load(this.bucket+'.meta');
+Bucket.prototype.init = function init(){
+	if ( MilkCrate._exists(this.bucket+'.meta')) {
+		this.meta = MilkCrate._load(this.bucket+'.meta');
+	}
+};
+
+Bucket.prototype.get = function get(id){
+	return MilkCrate._load(this._id(id));
+};
+
+
+Bucket.prototype.find = function find(qry){
+	var results = [];
+	if (!qry) {
+		// todo return all
+	}
+
+	if (typeof qry === 'object') {
+
+		//
+		if (qry._id) {
+			if (MilkCrate._type(qry._id) == 'array'){
+				for (var id in qry._id) {
+					results.push(this.get(qry._id[id]));
 				}
+			} else {
+				// simple case, we still return array
+				// todo, handle arrays of ids
+				results.push(this.get(qry._id));
+			}
 
-			},
-			get: function get(id){
-				return MilkCrate._load(this._id(id));
+		} else {
 
-			},
-			find: function find(qry){
-				var results = [];
-				if (!qry) {
-					// todo return all
-				}
-
-				if (typeof qry === 'object') {
-
-					//
-					if (qry._id) {
-						if (MilkCrate._type(qry._id) == 'array'){
-							for (var id in qry._id) {
-								results.push(this.get(qry._id[id]));
-							}
-						} else {
-							// simple case, we still return array
-							// todo, handle arrays of ids
-							results.push(this.get(qry._id));
-						}
-					
-					} else {
-						
-						var required = 0;
-						if ( qry.$and ){
-							for (var clause in qry.$and) {
-								if (qry.$and.hasOwnProperty(clause)) {
-									required++;
-								}
-							}
-							qry = qry.$and;
-						} else {
-							required = 1;
-						}
-
-						for (var cursor = 0; cursor < this.meta.rows; cursor++) {
-							var current = this.get(cursor+1);
-							var found = 0;
-							for (var selector in qry) {
-								if ( typeof current[selector] !== undefined ) {
-									if (current[selector] === qry[selector]) {
-										found++;
-									}
-								}
-							}
-							if (found >= required ) {
-								results.push(current);
-							}
-						}
-
-						
+			var required = 0;
+			if ( qry.$and ){
+				for (var clause in qry.$and) {
+					if (qry.$and.hasOwnProperty(clause)) {
+						required++;
 					}
 				}
-				
-				return results;
-			},
-// ----------------------------------------------------------------------------
+				qry = qry.$and;
+			} else {
+				required = 1;
+			}
 
-			// implements the mongodb equivalent
+			for (var cursor = 0; cursor < this.meta.rows; cursor++) {
+				var current = this.get(cursor+1);
+				var found = 0;
+				for (var selector in qry) {
+					if ( typeof current[selector] !== undefined ) {
+						if (current[selector] === qry[selector]) {
+							found++;
+						}
+					}
+				}
+				if (found >= required ) {
+					results.push(current);
+				}
+			}
+
+
+		}
+	}
+
+	return results;
+	};
+
+// implements the mongodb equivalent
 			//db.collection.update( criteria, objNew, upsert, multi )
 			//
 			//Arguments:
@@ -92,113 +87,114 @@ MilkCrate = {
 			//criteria - query which selects the record to update;
 			//objNew - updated object or $ operators (e.g., $inc) which manipulate the object
 			//upsert - if this should be an "upsert"; that is, if the record does not exist, insert it
-			//multi - if all documents matching criteria should be updated (the default is to only update the first document found)
-
-			update: function update( criteria, objNew, upsert, multi ){
-				upsert = (upsert) ? upsert : true;
-				multi = (multi) ? multi : false;
-
-				var updatables = this.find(criteria);
-
-				// add incrementers {$inc, { field:increment }}
-				if ( objNew.$inc ) {
-					for (var field in objNew.$inc) {
-						if (objNew.$inc.hasOwnProperty(field)) {
-							// convert the $inc to a function to increment the supplied value
-							objNew[field] = (function( increment ) {
-								return (function(old) {
-									return old + increment;
-								});
-							})(objNew.$inc[field]);
-
-						}
-					}
-					delete objNew.$inc;
-				}
+			//multi - if all documents matching criteria should be updated 
+                        //        (the default is to only update the first document found)
 
 
+Bucket.prototype.update = function update( criteria, objNew, upsert, multi ){
+	upsert = (upsert) ? upsert : true;
+	multi = (multi) ? multi : false;
 
-				if ( updatables.length === 0 ) {
-					if (upsert === true) {
-						// insert
-						objNew._id = this._newId();
-						saveid = this._id(objNew._id);
-						this.meta.rows++;
-						MilkCrate._save( saveid, objNew );
-						this.saveMeta();
-					}
-				} else {
-					
-					if (!multi) {
-						// only update the first element
-						updatables = updatables.slice(0,1);
-					}
-				
-					for (var u in updatables) {
-						var current = updatables[u];
-						
-						for (var attr in objNew) {
-							if (objNew.hasOwnProperty(attr)) {
-								if (MilkCrate._type(objNew[attr]) === 'function') {
-									current[attr] = objNew[attr](current[attr]);
-								} else {
-									current[attr] = objNew[attr];
-								}
-							}
-						}
-						MilkCrate._save(this._id(current._id), current);
-						this.saveMeta();
+	var updatables = this.find(criteria);
+
+	// add incrementers {$inc, { field:increment }}
+	if ( objNew.$inc ) {
+		for (var field in objNew.$inc) {
+			if (objNew.$inc.hasOwnProperty(field)) {
+				// convert the $inc to a function to increment the supplied value
+				objNew[field] = (function( increment ) {
+					return (function(old) {
+						return old + increment;
+					});
+				})(objNew.$inc[field]);
+
+			}
+		}
+		delete objNew.$inc;
+	}
+
+	if ( updatables.length === 0 ) {
+		if (upsert === true) {
+			// insert
+			objNew._id = this._newId();
+			saveid = this._id(objNew._id);
+			this.meta.rows++;
+			MilkCrate._save( saveid, objNew );
+			this.saveMeta();
+		}
+	} else {
+
+		if (!multi) {
+			// only update the first element
+			updatables = updatables.slice(0,1);
+		}
+
+		for (var u in updatables) {
+			var current = updatables[u];
+
+			for (var attr in objNew) {
+				if (objNew.hasOwnProperty(attr)) {
+					if (MilkCrate._type(objNew[attr]) === 'function') {
+						current[attr] = objNew[attr](current[attr]);
+					} else {
+						current[attr] = objNew[attr];
 					}
 				}
-			},
-			/**
-			 *
-			**/
-			save: function save(obj) {
-				if (obj._id === undefined || obj._id === null ) {
-					obj._id = this._newId();
-				}
-				var key = this._id(obj._id);
+			}
+			MilkCrate._save(this._id(current._id), current);
+			this.saveMeta();
+		}
+	}
+};
 
-				// merge existing.
-				var existing = MilkCrate._load(key);
-				if (existing !== null) {
-					for (var attr in obj) {
-						if (obj.hasOwnProperty(attr)) {
-							existing[attr] = obj[attr];
-						}
-						
-					}
-					MilkCrate._save(key,existing);
-					this.saveMeta();
-				} else {
-				// new row
-					this.meta.rows++;
-					MilkCrate._save(key,obj); 
-					this.saveMeta();
-				}
+Bucket.prototype.save = function save(obj) {
+	if (obj._id === undefined || obj._id === null ) {
+		obj._id = this._newId();
+	}
+	var key = this._id(obj._id);
 
-
-
-
-			},
-			_id: function _id(id){
-				return this.bucket + '[' + id +']';
-			},
-			_newId: function _newId(){
-				return this.meta.nextId++;
-			},
-			saveMeta: function saveMeta() {
-				MilkCrate._save(config.bucket+'.meta',this.meta);
+	// merge existing.
+	var existing = MilkCrate._load(key);
+	if (existing !== null) {
+		for (var attr in obj) {
+			if (obj.hasOwnProperty(attr)) {
+				existing[attr] = obj[attr];
 			}
 
-		};
-// ---------bucket
+		}
+		MilkCrate._save(key,existing);
+		this.saveMeta();
+	} else {
+	// new row
+		this.meta.rows++;
+		MilkCrate._save(key,obj);
+		this.saveMeta();
+	}
+};
+
+
+Bucket.prototype._id = function _id(id){
+	return this.bucket + '[' + id +']';
+};
+
+Bucket.prototype._newId = function _newId(){
+	return this.meta.nextId++;
+};
+
+Bucket.prototype.saveMeta = function saveMeta() {
+	MilkCrate._save(this.bucket+'.meta',this.meta);
+};
 
 
 
+MilkCrate = {
+	engine:null,
+	initBucket: function initBucket(config) {
+		if (!MilkCrate.engine) {
+			MilkCrate.engine = window.localStorage;
+		}
 
-
+		MilkCrate[config.bucket] = new Bucket(config.bucket.toString());
 
 	},
 	// direct copy from Qunit hoozit()
